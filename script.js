@@ -1,4 +1,4 @@
-const API_BASE = ''; // Set this to your backend URL if the API is hosted separately.
+const API_BASE = 'https://cautious-space-umbrella-r475vwv9x9w7fx75-3000.app.github.dev/';
 const socket = io(API_BASE || window.location.origin);
 let currentUser = null;
 let currentStoryId = null;
