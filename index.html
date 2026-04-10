@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Word Story</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="login" class="screen">
+      <h1>One Word Story</h1>
+      <div id="auth">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="pin" placeholder="PIN">
+        <button id="signup">Sign Up</button>
+        <button id="loginBtn">Log In</button>
+        <div id="authMessage"></div>
+      </div>
+    </div>
+    <div id="menu" class="screen hidden">
+      <h1>Welcome, <span id="user"></span></h1>
+      <button id="createStory">Create Story</button>
+      <input type="text" id="storyTitle" placeholder="Story Title">
+      <button id="joinStory">Join Story</button>
+      <input type="text" id="storyId" placeholder="Story ID">
+      <div id="menuMessage"></div>
+    </div>
+    <div id="game" class="screen hidden">
+      <h2 id="storyTitleDisplay"></h2>
+      <div id="storyDisplay"></div>
+      <div id="turnIndicator"></div>
+      <input type="text" id="wordInput" placeholder="Your word">
+      <button id="sendWord">Send Word</button>
+      <button id="replay">Replay</button>
+      <button id="export">Export</button>
+      <button id="stats">Stats</button>
+      <button id="backToMenu">Back to Menu</button>
+      <div id="gameMessage"></div>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
