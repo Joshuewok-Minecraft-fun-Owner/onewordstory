@@ -1,75 +1,126 @@
-const socket = io();
+const API_BASE = ''; // Set this to your backend URL if the API is hosted separately.
+const socket = io(API_BASE || window.location.origin);
 let currentUser = null;
 let currentStoryId = null;
 let storyWords = [];
 let replayIndex = 0;
 let isReplaying = false;
 
+function apiUrl(path) {
+  return `${API_BASE || ''}${path}`;
+}
+
+socket.on('connect', () => {
+  console.log('Connected to backend');
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Socket connection failed:', error);
+  showMessage('authMessage', 'Backend connection failed. You need a running API server.');
+});
+
+socket.on('disconnect', () => {
+  console.warn('Socket disconnected');
+});
+
+function showMessage(id, message) {
+  document.getElementById(id).textContent = message || '';
+}
+
+async function fetchJson(url, options) {
+  try {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || res.statusText || 'Request failed');
+    }
+    return await res.json();
+  } catch (error) {
+    throw new Error(error.message || 'Network error');
+  }
+}
+
 document.getElementById('signup').addEventListener('click', async () => {
-  const username = document.getElementById('username').value;
-  const pin = document.getElementById('pin').value;
-  const res = await fetch('/signup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, pin })
-  });
-  const data = await res.json();
-  document.getElementById('authMessage').textContent = data.error || 'Signed up successfully';
-  if (data.success) {
+  showMessage('authMessage', '');
+  const username = document.getElementById('username').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  if (!username || !pin) {
+    return showMessage('authMessage', 'Username and PIN are required');
+  }
+
+  try {
+    const data = await fetchJson(apiUrl('/signup'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, pin })
+    });
+    showMessage('authMessage', 'Signed up successfully');
     currentUser = username;
     showScreen('menu');
     document.getElementById('user').textContent = username;
+  } catch (error) {
+    showMessage('authMessage', error.message);
   }
 });
 
 document.getElementById('loginBtn').addEventListener('click', async () => {
-  const username = document.getElementById('username').value;
-  const pin = document.getElementById('pin').value;
-  const res = await fetch('/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, pin })
-  });
-  const data = await res.json();
-  document.getElementById('authMessage').textContent = data.error || 'Logged in successfully';
-  if (data.success) {
+  showMessage('authMessage', '');
+  const username = document.getElementById('username').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  if (!username || !pin) {
+    return showMessage('authMessage', 'Username and PIN are required');
+  }
+
+  try {
+    const data = await fetchJson(apiUrl('/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, pin })
+    });
+    showMessage('authMessage', 'Logged in successfully');
     currentUser = username;
     showScreen('menu');
     document.getElementById('user').textContent = username;
+  } catch (error) {
+    showMessage('authMessage', error.message);
   }
 });
 
 document.getElementById('createStory').addEventListener('click', async () => {
-  const title = document.getElementById('storyTitle').value;
-  if (!title) return;
-  const res = await fetch('/stories/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, username: currentUser })
-  });
-  const data = await res.json();
-  if (data.storyId) {
+  showMessage('menuMessage', '');
+  const title = document.getElementById('storyTitle').value.trim();
+  if (!title) return showMessage('menuMessage', 'Story title is required');
+  if (!currentUser) return showMessage('menuMessage', 'Please log in first');
+
+  try {
+    const data = await fetchJson(apiUrl('/stories/create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, username: currentUser })
+    });
     currentStoryId = data.storyId;
     joinStory();
-  } else {
-    document.getElementById('menuMessage').textContent = data.error;
+  } catch (error) {
+    showMessage('menuMessage', error.message);
   }
 });
 
 document.getElementById('joinStory').addEventListener('click', async () => {
-  const storyId = document.getElementById('storyId').value;
-  if (!storyId) return;
-  const res = await fetch('/stories/join', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ storyId, username: currentUser })
-  });
-  const data = await res.json();
-  if (data.success) {
+  showMessage('menuMessage', '');
+  const storyId = document.getElementById('storyId').value.trim();
+  if (!storyId) return showMessage('menuMessage', 'Story ID is required');
+  if (!currentUser) return showMessage('menuMessage', 'Please log in first');
+
+  try {
+    const data = await fetchJson(apiUrl('/stories/join'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storyId, username: currentUser })
+    });
     currentStoryId = storyId;
     joinStory();
-  } else {
-    document.getElementById('menuMessage').textContent = data.error;
+  } catch (error) {
+    showMessage('menuMessage', error.message);
   }
 });
 
@@ -82,6 +133,9 @@ function joinStory() {
 document.getElementById('sendWord').addEventListener('click', () => {
   const word = document.getElementById('wordInput').value.trim();
   if (!word) return;
+  if (!currentStoryId || !currentUser) {
+    return showMessage('gameMessage', 'Join a story first');
+  }
   socket.emit('sendWord', { storyId: currentStoryId, word, username: currentUser });
   document.getElementById('wordInput').value = '';
 });
@@ -101,7 +155,7 @@ document.getElementById('replay').addEventListener('click', () => {
 
 document.getElementById('export').addEventListener('click', async () => {
   const res = await fetch(`/export/${currentStoryId}`);
-  const data = await res.json();
+  const data = await res.json();  const API_BASE = 'https://onewordstory.pages.dev/';
   if (data.story) {
     const blob = new Blob([data.story], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
