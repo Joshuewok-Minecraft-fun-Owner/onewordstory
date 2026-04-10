@@ -1,4 +1,9 @@
 {
-  "users": [],
+  "users": [
+    {
+      "username": "testuser",
+      "pinHash": "$2a$10$chiDy8DNcxT2eL0wVvNx/.k1xmQ9sIqlQpWE9jhXJzVtwwhhjXudW"
+    }
+  ],
   "stories": []
 }

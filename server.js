@@ -8,11 +8,10 @@ const cors = require('cors');
 const path = require('path');
 
 const adapter = new JSONFile('db.json');
-const db = new Low(adapter);
+const db = new Low(adapter, { users: [], stories: [] });
 
 async function initDB() {
   await db.read();
-  db.data ||= { users: [], stories: [] };
   await db.write();
 }
 
